@@ -1,4 +1,4 @@
-Combinaciones de Horarios para la Universidad de Guadalajar
+Combinaciones de Horarios para la Universidad de Guadalajara
 ===========================================================
 
 Este es un projecto para leer información desde el SIIAU y generar horarios.
