@@ -1,4 +1,4 @@
-﻿namespace ApeironOnline.Core.Models
+﻿namespace Apeiron.Core.Models
 {
 
     public enum CentrosUniversitarios

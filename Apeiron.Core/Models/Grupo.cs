@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace ApeironOnline.Core.Models
+namespace Apeiron.Core.Models
 {
     public class Grupo
     {

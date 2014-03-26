@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ApeironOnline.Core.Models
+namespace Apeiron.Core.Models
 {
     public class LugarHora
     {

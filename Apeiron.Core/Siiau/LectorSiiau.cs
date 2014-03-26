@@ -1,4 +1,4 @@
-﻿using ApeironOnline.Core.Models;
+﻿using Apeiron.Core.Models;
 using CsQuery;
 using Newtonsoft.Json;
 using NodaTime;
@@ -11,7 +11,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 
-namespace ApeironOnline.Siiau
+namespace Apeiron.Siiau
 {
     public class LectorSiiau
     {

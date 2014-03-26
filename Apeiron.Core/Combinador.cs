@@ -1,9 +1,9 @@
-﻿using ApeironOnline.Core.Models;
+﻿using Apeiron.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ApeironOnline.Core
+namespace Apeiron.Core
 {
     public class Combinador
     {
