@@ -63,14 +63,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Models\CentroUniversitario.cs" />
+    <Compile Include="Models\CentrosUniversitarios.cs" />
     <Compile Include="Models\Grupo.cs" />
     <Compile Include="Models\Horario.cs" />
     <Compile Include="Models\Maestro.cs" />
     <Compile Include="Models\Materia.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Siiau\CombinacionGrupos.cs" />
-    <Compile Include="Siiau\Combinador.cs" />
+    <Compile Include="CombinacionGrupos.cs" />
+    <Compile Include="Combinador.cs" />
     <Compile Include="Siiau\LectorSiiau.cs" />
     <Compile Include="Siiau\RegistroSiiau.cs" />
   </ItemGroup>

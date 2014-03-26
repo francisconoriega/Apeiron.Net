@@ -1,4 +1,4 @@
-﻿using ApeironOnline.Models;
+﻿using ApeironOnline.Core.Models;
 using CsQuery;
 using Newtonsoft.Json;
 using NodaTime;
@@ -6,7 +6,6 @@ using SmartFormat;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;

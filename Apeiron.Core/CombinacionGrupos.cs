@@ -1,4 +1,4 @@
-﻿using ApeironOnline.Models;
+﻿using ApeironOnline.Core.Models;
 using Newtonsoft.Json;
 using NodaTime;
 using System;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace ApeironOnline.Siiau
+namespace ApeironOnline.Core
 {
     public class CombinacionGrupos
     {

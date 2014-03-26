@@ -1,8 +1,7 @@
-﻿
-using ApeironOnline.Models;
+﻿using ApeironOnline.Core.Models;
 using NodaTime;
-using System;
 using System.Collections.Generic;
+
 namespace ApeironOnline.Siiau
 {
     public class RegistroSiiau  

@@ -1,6 +1,6 @@
-﻿
-using System.Collections.Generic;
-namespace ApeironOnline.Models
+﻿using System.Collections.Generic;
+
+namespace ApeironOnline.Core.Models
 {
     public class Grupo
     {
@@ -29,7 +29,7 @@ namespace ApeironOnline.Models
                 {
                     str += dia.ToString() + " ";
                 }
-                str += lh.HoraInicio.ToString() + " " + lh.HoraFin.ToString() + "| cupo: "+this.CupoDisponible + "/"+this.Cupo;
+                str += lh.HoraInicio.ToString() + " " + lh.HoraFin.ToString() + "| cupo: " + this.CupoDisponible + "/" + this.Cupo;
             }
             return str;
         }
