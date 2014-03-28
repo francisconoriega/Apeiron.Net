@@ -3,7 +3,6 @@ using CsQuery;
 using Newtonsoft.Json;
 using NodaTime;
 using SmartFormat;
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,87 +16,93 @@ namespace Apeiron.Siiau
     {
 
         private readonly string urlRegistros = "http://t09.siiau.udg.mx/wco/sspseca.consulta_oferta?ciclop={CicloEscolar}&cup={CentroUniversitario}&crsep={ClaveMateria}&p_start={PaginacionInicio}&mostrarp={NumRegistros}";
+        private readonly string urlFormaConsulta = "http://t09.siiau.udg.mx/wco/sspseca.forma_consulta";
         private readonly List<char> CU = new List<char> { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' };
+
+        public async Task<IEnumerable<string>> GetCiclosEscolares()
+        {
+            HttpClient client = new HttpClient();
+            var httpResponse = await client.GetAsync(urlFormaConsulta);
+            var payload = await httpResponse.Content.ReadAsStringAsync();
+
+            var queryableHtml = new CQ(payload);
+
+            var options = queryableHtml["select[name='ciclop']"].Children();
+            return options.Select(e => e.Value);
+        }
 
         public async Task<Materia> GetMateria(string clave, CentrosUniversitarios centroUniversitario, string cicloEscolar)
         {
             Materia materia = null;
-            try
+
+            materia = new Materia();
+
+            HttpClient client = new HttpClient();
+            var formattedUrl = Smart.Format(urlRegistros, new { CicloEscolar = cicloEscolar, ClaveMateria = clave, CentroUniversitario = (char)centroUniversitario, PaginacionInicio = 0 });
+            var httpResponse = await client.GetAsync(formattedUrl);
+
+            var payload = await httpResponse.Content.ReadAsStringAsync();
+
+            var queryableHtml = new CQ(payload);
+            var rows = queryableHtml["body > table:first > tbody > tr"].Skip(2);
+
+            if (rows.Count() == 0)
             {
+                return null;
+            }
 
-                materia = new Materia();
+            materia.Clave = clave;
+            materia.Nombre = rows.First().Cq()["td:eq(2)"].Text().Replace("~", "Ñ");
+            materia.Creditos = int.Parse(rows.First().Cq()["td:eq(4)"].Text());
+            materia.Calendario = cicloEscolar;
 
-                HttpClient client = new HttpClient();
-                var formattedUrl = Smart.Format(urlRegistros, new { CicloEscolar = cicloEscolar, ClaveMateria = clave, CentroUniversitario = (char)centroUniversitario, PaginacionInicio = 0 });
-                var httpResponse = await client.GetAsync(formattedUrl);
+            foreach (var row in rows)
+            {
+                var cqRow = CQ.CreateFragment(row.Cq());
+                var lugarHoraInfo = cqRow["td:nth-child(8) tr"];
+                var grupo = new Grupo();
 
-                var payload = await httpResponse.Content.ReadAsStringAsync();
-
-                var queryableHtml = new CQ(payload);
-                var rows = queryableHtml["body > table:first > tbody > tr"].Skip(2);
-
-                if (rows.Count() == 0)
+                if (lugarHoraInfo.Length == 0)
                 {
-                    return null;
+                    continue;
                 }
 
-                materia.Clave = clave;
-                materia.Nombre = rows.First().Cq()["td:eq(2)"].Text().Replace("~", "Ñ");
-                materia.Creditos = int.Parse(rows.First().Cq()["td:eq(4)"].Text());
-                materia.Calendario = cicloEscolar;
-
-                foreach (var row in rows)
+                for (int i = 0; i < lugarHoraInfo.Length; i++)
                 {
-                    var cqRow = CQ.CreateFragment(row.Cq());
-                    var lugarHoraInfo = cqRow["td:nth-child(8) tr"];
-                    var grupo = new Grupo();
 
-                    if (lugarHoraInfo.Length == 0)
-                    {
-                        continue;
-                    }
+                    grupo.Materia = materia;
+                    grupo.CentroUniversitario = centroUniversitario;
+                    grupo.NRC = cqRow["td:eq(0)"].Text();
+                    grupo.Seccion = cqRow["td:eq(3)"].Text();
+                    grupo.Cupo = int.Parse(cqRow["td:eq(5)"].Text());
+                    grupo.CupoDisponible = int.Parse(cqRow["td:eq(6)"].Text());
 
-                    for (int i = 0; i < lugarHoraInfo.Length; i++)
-                    {
+                    var info = CQ.CreateFragment(cqRow["td:eq(7) tr"].Eq(i));
+                    var horas = info["td:eq(1)"].Text().Split('-');
 
-                        grupo.Materia = materia;
-                        grupo.CentroUniversitario = centroUniversitario;
-                        grupo.NRC = cqRow["td:eq(0)"].Text();
-                        grupo.Seccion = cqRow["td:eq(3)"].Text();
-                        grupo.Cupo = int.Parse(cqRow["td:eq(5)"].Text());
-                        grupo.CupoDisponible = int.Parse(cqRow["td:eq(6)"].Text());
+                    LugarHora lg = new LugarHora();
+                    lg.HoraInicio = new NodaTime.LocalTime(
+                        hour: int.Parse(horas.First().Substring(0, 2)),
+                        minute: int.Parse(horas.First().Substring(2, 2)));
+                    lg.HoraFin = new NodaTime.LocalTime(
+                        hour: int.Parse(horas.Last().Substring(0, 2)),
+                        minute: int.Parse(horas.Last().Substring(2, 2)));
 
-                        var info = CQ.CreateFragment(cqRow["td:eq(7) tr"].Eq(i));
-                        var horas = info["td:eq(1)"].Text().Split('-');
+                    lg.Dias = ParseDias(info["td:eq(2)"].Text());
+                    lg.Edificio = info["td:eq(3)"].Text();
+                    lg.Aula = info["td:eq(4)"].Text();
 
-                        LugarHora lg = new LugarHora();
-                        lg.HoraInicio = new NodaTime.LocalTime(
-                            hour:int.Parse(horas.First().Substring(0, 2)),
-                            minute: int.Parse(horas.First().Substring(2, 2)));
-                        lg.HoraFin = new NodaTime.LocalTime(
-                            hour: int.Parse(horas.Last().Substring(0, 2)), 
-                            minute: int.Parse(horas.Last().Substring(2, 2)));
+                    grupo.LugaresHoras.Add(lg);
 
-                        lg.Dias = ParseDias(info["td:eq(2)"].Text());
-                        lg.Edificio = info["td:eq(3)"].Text();
-                        lg.Aula = info["td:eq(4)"].Text();
+                    grupo.Periodo = info["td:eq(5)"].Text();
 
-                        grupo.LugaresHoras.Add(lg);
-
-                        grupo.Periodo = info["td:eq(5)"].Text();
-
-                        var ses_maestro = CQ.CreateFragment(cqRow["td:nth-child(9) tr"]);
-                        grupo.Maestro = ses_maestro["td:nth-child(2)"].Text().Replace("~", "Ñ");
-                    }
-                    materia.Grupos.Add(grupo);
-
+                    var ses_maestro = CQ.CreateFragment(cqRow["td:nth-child(9) tr"]);
+                    grupo.Maestro = ses_maestro["td:nth-child(2)"].Text().Replace("~", "Ñ");
                 }
-            }
-            catch (Exception)
-            {
+                materia.Grupos.Add(grupo);
 
-                throw;
             }
+
             return materia;
         }
 
@@ -237,10 +242,10 @@ namespace Apeiron.Siiau
             List<string> resultados = new List<string>();
             foreach (var g in g2)
             {
-                var s = await Task.Factory.StartNew(()=>JsonConvert.SerializeObject(g));
+                var s = await Task.Factory.StartNew(() => JsonConvert.SerializeObject(g));
                 resultados.Add(s);
             }
-            return resultados; 
+            return resultados;
         }
     }
 }
