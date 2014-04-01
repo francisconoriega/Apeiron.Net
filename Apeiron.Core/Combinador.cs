@@ -1,7 +1,7 @@
-﻿using Apeiron.Core.Models;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Apeiron.Core.Models;
 
 namespace Apeiron.Core
 {
@@ -12,6 +12,7 @@ namespace Apeiron.Core
             this.CombinacionesDeGrupos = new List<CombinacionGrupos>();
         }
         private List<CombinacionGrupos> CombinacionesDeGrupos { get; set; }
+
         private int maxHuecosPorDia = 0;
         private TimeSpan maxDuracionPorHueco;
         private int numMaterias = 0;
@@ -32,7 +33,9 @@ namespace Apeiron.Core
             this.maxHuecosPorDia = maxHuecosPorDia;
             this.CombinacionesDeGrupos = new List<CombinacionGrupos>();
             this.numMaterias = materias.Count();
-            ExploraCombinaciones(new CombinacionGrupos(), materias);
+
+            this.ExploraCombinaciones(new CombinacionGrupos(), materias);
+
             return this.CombinacionesDeGrupos;
         }
 

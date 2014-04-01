@@ -1,10 +1,10 @@
-﻿using Apeiron.Core.Models;
+﻿using System.Collections.Generic;
+using Apeiron.Core.Models;
 using NodaTime;
-using System.Collections.Generic;
 
 namespace Apeiron.Siiau
 {
-    public class RegistroSiiau  
+    public class RegistroSiiau
     {
         public CentrosUniversitarios CentroUniversitario { get; set; }
         public string NRC { get; set; }

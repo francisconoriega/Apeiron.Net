@@ -3,7 +3,7 @@
 
     public enum CentrosUniversitarios
     {
-        TODOS = '-',
+        TODOS,
         CUAAD = 'A',
         CUCBA = 'B',
         CUCEA = 'C',

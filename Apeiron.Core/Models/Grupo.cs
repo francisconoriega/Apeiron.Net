@@ -29,8 +29,10 @@ namespace Apeiron.Core.Models
                 {
                     str += dia.ToString() + " ";
                 }
-                str += lh.HoraInicio.ToString() + " " + lh.HoraFin.ToString() + "| cupo: " + this.CupoDisponible + "/" + this.Cupo;
+                str += lh.HoraInicio.ToString() + " " + lh.HoraFin.ToString();
             }
+
+			str += "| cupo: " + this.CupoDisponible + "/" + this.Cupo;
             return str;
         }
     }

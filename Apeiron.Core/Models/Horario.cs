@@ -1,6 +1,6 @@
-﻿using NodaTime;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using NodaTime;
 
 namespace Apeiron.Core.Models
 {
@@ -14,12 +14,12 @@ namespace Apeiron.Core.Models
 
         public bool ColisionaCon(LugarHora lugarHora)
         {
-            if (!this.Dias.Any(d=> lugarHora.Dias.Any(lgd => lgd==d)))
-            {                
+            if (!this.Dias.Any(d => lugarHora.Dias.Any(lgd => lgd == d)))
+            {
                 return false;
             }
 
-            if (lugarHora.HoraInicio >= this.HoraInicio && lugarHora.HoraInicio<=this.HoraFin)
+            if (lugarHora.HoraInicio >= this.HoraInicio && lugarHora.HoraInicio <= this.HoraFin)
             {
                 return true;
             }
