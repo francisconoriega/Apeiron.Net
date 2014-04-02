@@ -17,12 +17,12 @@ namespace Apeiron.Core
         private TimeSpan maxDuracionPorHueco;
         private int numMaterias = 0;
         private int numCiclos = 0;
-        private List<CentrosUniversitarios> filtroCentros;
+        private HashSet<CentrosUniversitarios> filtroCentros;
         private ILookup<string, string> filtroMaestros;
         private bool soloConCupo;
         private bool permiteHorariosIncompletos;
 
-        public List<CombinacionGrupos> EncuentraTodos(List<Materia> materias, ILookup<string, string> filtroMaestros, TimeSpan maxDuracionPorHueco, List<CentrosUniversitarios> filtroCentros = null, int maxHuecosPorDia = int.MaxValue, bool soloConCupo = true, bool permiteHorariosIncompletos = true)
+        public List<CombinacionGrupos> EncuentraTodos(List<Materia> materias, ILookup<string, string> filtroMaestros, TimeSpan maxDuracionPorHueco, HashSet<CentrosUniversitarios> filtroCentros = null, int maxHuecosPorDia = int.MaxValue, bool soloConCupo = true, bool permiteHorariosIncompletos = true)
         {
             this.numCiclos = 0;
             this.permiteHorariosIncompletos = permiteHorariosIncompletos;

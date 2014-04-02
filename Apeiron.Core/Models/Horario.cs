@@ -8,7 +8,7 @@ namespace Apeiron.Core.Models
     {
         public LocalTime HoraInicio { get; set; }
         public LocalTime HoraFin { get; set; }
-        public List<IsoDayOfWeek> Dias { get; set; }
+        public HashSet<IsoDayOfWeek> Dias { get; set; }
         public string Edificio { get; set; }
         public string Aula { get; set; }
 

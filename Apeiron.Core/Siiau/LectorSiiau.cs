@@ -143,9 +143,9 @@ namespace Apeiron.Siiau
 			return materia;
 		}
 
-		private List<IsoDayOfWeek> ParseDias(string diasLetras)
+		private HashSet<IsoDayOfWeek> ParseDias(string diasLetras)
 		{
-			List<IsoDayOfWeek> dias = new List<IsoDayOfWeek>();
+            var dias = new HashSet<IsoDayOfWeek>();
 
 			foreach (var dia in diasLetras)
 			{
