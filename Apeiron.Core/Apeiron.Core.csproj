@@ -68,7 +68,6 @@
     <Compile Include="CombinacionGrupos.cs" />
     <Compile Include="Combinador.cs" />
     <Compile Include="Siiau\LectorSiiau.cs" />
-    <Compile Include="Siiau\RegistroSiiau.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
