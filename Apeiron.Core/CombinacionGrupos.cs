@@ -10,7 +10,7 @@ namespace Apeiron.Core
 {
     public class CombinacionGrupos
     {
-        private static readonly List<IsoDayOfWeek> SEMANA = new List<IsoDayOfWeek> { IsoDayOfWeek.Monday, IsoDayOfWeek.Tuesday, IsoDayOfWeek.Wednesday, IsoDayOfWeek.Thursday, IsoDayOfWeek.Friday, IsoDayOfWeek.Saturday };
+        private static readonly HashSet<IsoDayOfWeek> SEMANA = new HashSet<IsoDayOfWeek> { IsoDayOfWeek.Monday, IsoDayOfWeek.Tuesday, IsoDayOfWeek.Wednesday, IsoDayOfWeek.Thursday, IsoDayOfWeek.Friday, IsoDayOfWeek.Saturday };
         public CombinacionGrupos()
         {
             this.Grupos = new ObservableCollection<Grupo>();
@@ -39,11 +39,16 @@ namespace Apeiron.Core
 
         public bool ColisionaCon(Grupo otroGrupo)
         {
+            //TODO: usar matriz para eficientar busqueda.
+
             //Esto se leería más fácil en un lenguaje funcional. Básicamente dice:
             //Si cualquiera de las horas de cualquiera de los grupos en this.Grupos (lugarHora) colisiona
             //con cualquiera de las horas del otroGrupo (otroGrupoLugarHora)
 
-            if (this.Grupos.Any(g => g.LugaresHoras.Any(lugarHora => otroGrupo.LugaresHoras.Any(otroGrupoLugarHora => lugarHora.ColisionaCon(otroGrupoLugarHora)))))
+            var horasDeLosGruposActuales = this.Grupos.SelectMany(g => g.LugaresHoras);
+            var horasDelOtroGrupo = otroGrupo.LugaresHoras;
+
+            if (horasDeLosGruposActuales.Any(h=> horasDelOtroGrupo.Any(ho=> h.ColisionaCon(ho))))
             {
                 return true;
             }
@@ -63,6 +68,7 @@ namespace Apeiron.Core
 
         public bool Completo { get; set; }
 
+        //TODO: no hacer la lista desde cero, solo agregar/quitar huecos
         private Dictionary<IsoDayOfWeek, List<TimeSpan>> CalculaHuecos(IEnumerable<Grupo> grupos)
         {
             var huecos = new Dictionary<IsoDayOfWeek, List<TimeSpan>>();
@@ -75,13 +81,14 @@ namespace Apeiron.Core
                 var clasesEnDia = horas.Where(h => h.Dias.Contains(dia)).OrderBy(c => c.HoraInicio);
                 for (int i = 0; i < clasesEnDia.Count() - 1; i++)
                 {
-                    //Clases terminan a las :55, hay que sumar 5 minutos para ver si hay hueco con el inicio de la siguiente clase o no.
-                    if (clasesEnDia.ElementAt(i).HoraFin + Period.FromMinutes(5) != clasesEnDia.ElementAt(i + 1).HoraInicio)
+                    //Desafortunadamente no hay Intervalo para LocalDateTime, así que tenemos que convertirlo en Instante.
+                    var i1 = new Instant((clasesEnDia.ElementAt(i).HoraFin.LocalDateTime).TickOfDay);
+                    var i2 = new Instant(clasesEnDia.ElementAt(i + 1).HoraInicio.LocalDateTime.TickOfDay);
+                    var inter = new Interval(i1, i2);
+
+                    //Clases terminan a las :55, hay que tolerar al menos 5 minutos antes de considerarlo como hueco.
+                    if (inter.Duration.ToTimeSpan() > TimeSpan.FromMinutes(5))
                     {
-                        //Desafortunadamente no hay Intervalo para LocalDateTime, así que tenemos que convertirlo en Instante.
-                        var i1 = new Instant((clasesEnDia.ElementAt(i).HoraFin.LocalDateTime + Period.FromMinutes(5)).TickOfDay);
-                        var i2 = new Instant(clasesEnDia.ElementAt(i + 1).HoraInicio.LocalDateTime.TickOfDay);
-                        var inter = new Interval(i1, i2);
                         huecos[dia].Add(inter.Duration.ToTimeSpan());
                     }
                 }

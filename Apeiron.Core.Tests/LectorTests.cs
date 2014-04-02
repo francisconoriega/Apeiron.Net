@@ -1,17 +1,23 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.Linq;
 using Apeiron.Siiau;
-using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Apeiron.Core.Tests
 {
     [TestClass]
-    public class UnitTest1
+    public class LectorTests
     {
+        LectorSiiau l;
+
+        public LectorTests()
+        {
+            l = new LectorSiiau();
+        }
+
         [TestMethod]
         public void GetCiclosEscolares()
         {
-            var l = new LectorSiiau();
+            l = new LectorSiiau();
             var x = l.GetCiclosEscolares().Result;
             Assert.IsNotNull(x);
             Assert.IsTrue(x.All(s => s.Length == 6));
@@ -21,7 +27,7 @@ namespace Apeiron.Core.Tests
         [TestMethod]
         public void GetCentrosUniversitarios()
         {
-            var l = new LectorSiiau();
+            l = new LectorSiiau();
             var c = l.GetCentrosUniversitarios().Result;
 
             Assert.IsNotNull(c);
@@ -32,17 +38,17 @@ namespace Apeiron.Core.Tests
         [TestMethod]
         public void GetMateriaPorCentroTodos()
         {
-            var l = new LectorSiiau();
+            l = new LectorSiiau();
             var x = l.GetCiclosEscolares().Result;
-             var z = l.GetMateriaPorCentro("A0296", x.Skip(1).First()).Result;
-             Assert.IsNotNull(z);
-             Assert.AreEqual<string>("A0296", z.Clave);
+            var z = l.GetMateriaPorCentro("A0296", x.Skip(1).First()).Result;
+            Assert.IsNotNull(z);
+            Assert.AreEqual<string>("A0296", z.Clave);
         }
 
         [TestMethod]
         public void GetMateriaPorCentro()
         {
-            var l = new LectorSiiau();
+            l = new LectorSiiau();
             var x = l.GetCiclosEscolares().Result;
             var a = l.GetMateriaPorCentro("CC101", x.Skip(1).First(), "D").Result;
             Assert.IsNotNull(a);
@@ -52,7 +58,7 @@ namespace Apeiron.Core.Tests
         [TestMethod]
         public void GetMateriaPorCentroMultiples()
         {
-            var l = new LectorSiiau();
+            l = new LectorSiiau();
             var x = l.GetCiclosEscolares().Result;
             var a = l.GetMateriaPorCentro("CC101", x.Skip(1).First()).Result;
             Assert.IsNotNull(a);
@@ -64,7 +70,7 @@ namespace Apeiron.Core.Tests
         [TestMethod]
         public void GetMateriaPorCentroQueNoCorresponde()
         {
-            var l = new LectorSiiau();
+            l = new LectorSiiau();
             var x = l.GetCiclosEscolares().Result;
             var a = l.GetMateriaPorCentro("A0296", x.Skip(1).First(), "D").Result;
             Assert.IsNull(a);
