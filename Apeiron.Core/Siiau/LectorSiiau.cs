@@ -23,13 +23,13 @@ namespace Apeiron.Siiau
             simpleCache = new Dictionary<string, string>();
         }
 
-        public async Task<Dictionary<string, string>> GetCiclosEscolares()
+        public async Task<IEnumerable<string>> GetCiclosEscolares()
         {
             var payload = await GetHtml(urlFormaConsulta, true);
             var queryableHtml = new CQ(payload);
 
             var options = queryableHtml["select[name='cup']"].Children();
-            return options.Select(e => new { value = e.Value, nombre = e.InnerText }).ToDictionary(o => o.value, o => o.nombre);
+            return options.Select(e => e.Value);
         }
 
         public async Task<Dictionary<string, string>> GetCentrosUniversitarios()
