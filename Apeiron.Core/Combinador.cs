@@ -34,10 +34,12 @@ namespace Apeiron.Core
             this.CombinacionesDeGrupos = new List<CombinacionGrupos>();
             this.numMaterias = materias.Count();
 
-            this.ExploraCombinaciones(new CombinacionGrupos(), materias);
+            this.ExploraCombinaciones(new CombinacionGrupos(), materias.ToArray(), 0);
 
             return this.CombinacionesDeGrupos;
         }
+
+        HashSet<string> MateriasConGruposOrdenados = new HashSet<string>();
 
         /// <summary>
         /// Funcion Recursiva que arma toda las combinaciones posibles de los grupos, siempre y cuando
@@ -46,7 +48,7 @@ namespace Apeiron.Core
         /// </summary>
         /// <param name="combinacionActual"></param>
         /// <param name="materias"></param>
-        private void ExploraCombinaciones(CombinacionGrupos combinacionActual, IEnumerable<Materia> materias)
+        private void ExploraCombinaciones(CombinacionGrupos combinacionActual, Materia[] materias, int i)
         {
             if (numCiclos++ > 20000)
             {
@@ -54,7 +56,7 @@ namespace Apeiron.Core
             }
 
             //Si ya n hay materias, ya terminamos las combinaciones posibles.
-            if (materias.Count() == 0)
+            if (i >= materias.Length)
             {
                 if (combinacionActual.Grupos.Count == numMaterias)
                 {
@@ -71,9 +73,13 @@ namespace Apeiron.Core
             else
             {
                 //Dado que limitamos el número de permutaciones posibles, ordenar los grupos por cupo primero
-                //aseguro que los primeros horarios que se encuentren tengan cupo.
-                var gruposOrdenadosPorCupo = materias.First().Grupos.OrderByDescending(g => g.CupoDisponible);
-                foreach (var grupo in gruposOrdenadosPorCupo)
+                //asegura que los primeros horarios que se encuentren tengan cupo.
+                if (!MateriasConGruposOrdenados.Contains(materias[i].Clave))
+                {
+                    materias[i].Grupos = materias[i].Grupos.OrderByDescending(g => g.CupoDisponible);
+                    MateriasConGruposOrdenados.Add(materias[i].Clave); 
+                }
+                foreach (var grupo in materias[i].Grupos)
                 {
                     var grupoValido = false;
                     if (!combinacionActual.ColisionaCon(grupo))
@@ -89,7 +95,7 @@ namespace Apeiron.Core
                                 {
                                     grupoValido = true;
                                     combinacionActual.Grupos.Add(grupo);
-                                    ExploraCombinaciones(combinacionActual, materias.Skip(1));
+                                    ExploraCombinaciones(combinacionActual, materias, i + 1);
                                     combinacionActual.Grupos.Remove(grupo);
                                 }
                             }
@@ -101,7 +107,7 @@ namespace Apeiron.Core
                     //actual, saltandonos esta materia.
                     if (!grupoValido && this.permiteHorariosIncompletos)
                     {
-                        ExploraCombinaciones(combinacionActual, materias.Skip(1));
+                        ExploraCombinaciones(combinacionActual, materias, i + 1);
                     }
                 }
             }
