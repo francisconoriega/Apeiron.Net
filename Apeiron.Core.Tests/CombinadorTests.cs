@@ -14,7 +14,7 @@ namespace Apeiron.Core.Tests
         {
             Combinador c = new Combinador();
 
-            List<string> claves = new List<string> { "cc101", "cc100", "cc103" };
+            List<string> claves = new List<string> { "cc101", "cc102", "cc103" };
 
             var l = new LectorSiiau();          
             var materias = l.GetMateriasPorCentro(claves, "201410").Result;
