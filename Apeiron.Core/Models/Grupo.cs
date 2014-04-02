@@ -8,7 +8,7 @@ namespace Apeiron.Core.Models
         {
             this.LugaresHoras = new List<LugarHora>();
         }
-        public CentrosUniversitarios CentroUniversitario { get; set; }
+        public string CentroUniversitario { get; set; }
         public string Maestro { get; set; }
         public string Seccion { get; set; }
         public string NRC { get; set; }

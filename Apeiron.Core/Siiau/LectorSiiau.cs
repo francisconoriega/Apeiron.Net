@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Net.Cache;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Apeiron.Core.Models;
@@ -28,7 +27,7 @@ namespace Apeiron.Siiau
             var payload = await GetHtml(urlFormaConsulta, true);
             var queryableHtml = new CQ(payload);
 
-            var options = queryableHtml["select[name='cup']"].Children();
+            var options = queryableHtml["select[name='ciclop']"].Children();
             return options.Select(e => e.Value);
         }
 
@@ -37,8 +36,8 @@ namespace Apeiron.Siiau
             var payload = await GetHtml(urlFormaConsulta, true);
             var queryableHtml = new CQ(payload);
 
-            var options = queryableHtml["select[name='ciclop']"].Children();
-            return options.Select(e => new { Key = e.Value, Text = e.InnerText }).ToDictionary(o => o.Key, o => o.Text);
+            var options = queryableHtml["select[name='cup']"].Children();
+            return options.Select(e => new { Key = e.Value, Text = e.InnerText }).ToDictionary(o => o.Key, o => o.Text.Replace("~","Ñ"));
         }
 
         private async Task<string> GetHtml(string formattedUrl, bool usaCache = false)
@@ -62,7 +61,7 @@ namespace Apeiron.Siiau
 
 
 
-        public async Task<List<Materia>> GetMateriasPorCentro(List<string> claves, CentrosUniversitarios centroUniversitario, string cicloEscolar)
+        public async Task<List<Materia>> GetMateriasPorCentro(List<string> claves, string centroUniversitario, string cicloEscolar)
         {
             List<Materia> materias = new List<Materia>();
             foreach (var clave in claves)
@@ -73,19 +72,8 @@ namespace Apeiron.Siiau
             return materias;
         }
 
-        public async Task<Materia> GetMateriaPorCentro(string clave, CentrosUniversitarios centroUniversitario, string cicloEscolar)
+        public async Task<Materia> GetMateriaPorCentro(string clave, string cicloEscolar, string codigoCentro = null)
         {
-            string codigoCentro;
-
-            if (centroUniversitario == CentrosUniversitarios.TODOS)
-            {
-                codigoCentro = string.Empty;
-            }
-            else
-            {
-                codigoCentro = ((char)centroUniversitario).ToString();
-            }
-
             var formattedUrl = Smart.Format(urlRegistros, new { CicloEscolar = cicloEscolar, ClaveMateria = clave, CentroUniversitario = codigoCentro, PaginacionInicio = 0 });
 
             var payload = await this.GetHtml(formattedUrl);
@@ -97,15 +85,15 @@ namespace Apeiron.Siiau
                 return null;
             }
 
-            return ConvierteTRsEnMateria(rows, centroUniversitario, cicloEscolar);
+            return ConvierteTRsEnMateria(rows, cicloEscolar, codigoCentro);
         }
 
-        private Materia ConvierteTRsEnMateria(IEnumerable<string> trs, CentrosUniversitarios centroUniversitario, string cicloEscolar)
+        private Materia ConvierteTRsEnMateria(IEnumerable<string> trs, string cicloEscolar, string centroUniversitario = null)
         {
             int i = 0;
 
             //buscar por todos los centros agrega una columna a los resultados
-            if (centroUniversitario == CentrosUniversitarios.TODOS)
+            if (string.IsNullOrEmpty(centroUniversitario))
             {
                 i++;
             }
@@ -125,9 +113,9 @@ namespace Apeiron.Siiau
 
                 grupo.Materia = materia;
 
-                if (centroUniversitario == CentrosUniversitarios.TODOS)
+                if (string.IsNullOrEmpty(centroUniversitario))
                 {
-                    grupo.CentroUniversitario = (CentrosUniversitarios)cqRow["td"].Eq(0).Text()[0];
+                    grupo.CentroUniversitario = cqRow["td"].Eq(0).Text();
                 }
 
                 grupo.NRC = cqRow["td"].Eq(i).Text();

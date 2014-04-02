@@ -59,7 +59,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Models\CentrosUniversitarios.cs" />
     <Compile Include="Models\Grupo.cs" />
     <Compile Include="Models\Horario.cs" />
     <Compile Include="Models\Maestro.cs" />
