@@ -15,14 +15,11 @@ namespace Apeiron.Core.Tests
         {
             Combinador c = new Combinador();
 
-            List<string> claves = new List<string> { "cc100","cc101", "cc102", "cc103" };
+            List<string> claves = new List<string> { "cc101", "cc102", "cc103" };
 
             var l = new LectorSiiau();
             var materias = l.GetMateriasPorCentro(claves, "201410").Result;
-            Stopwatch s = Stopwatch.StartNew();
-            var horarios = c.EncuentraTodos(materias, maxDuracionPorHueco: TimeSpan.MaxValue, soloConCupo:false);
-            s.Stop();
-            Assert.AreEqual(s.ElapsedMilliseconds, 1);
+            var horarios = c.EncuentraTodos(materias, maxDuracionPorHueco: TimeSpan.MaxValue);
 
             Assert.IsTrue(horarios.Count>9000);
             Assert.IsTrue(horarios.Distinct().Count() == horarios.Count);
