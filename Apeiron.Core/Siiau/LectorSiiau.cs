@@ -20,16 +20,27 @@ namespace Apeiron.Siiau
 			this.client = new HttpClient();
 		}
 
-		public async Task<IEnumerable<string>> GetCiclosEscolares()
+		public async Task<Dictionary<string,string>> GetCiclosEscolares()
 		{
 			var httpResponse = await this.client.GetAsync(urlFormaConsulta);
 			var payload = await httpResponse.Content.ReadAsStringAsync();
 
 			var queryableHtml = new CQ(payload);
 
-			var options = queryableHtml["select[name='ciclop']"].Children();
-			return options.Select(e => e.Value);
+			var options = queryableHtml["select[name='cup']"].Children();
+            return options.Select(e => new { value = e.Value, nombre = e.InnerText}).ToDictionary(o=>o.value, o=>o.nombre);
 		}
+
+        public async Task<IEnumerable<string>> GetCentrosUniversitarios()
+        {
+            var httpResponse = await this.client.GetAsync(urlFormaConsulta);
+            var payload = await httpResponse.Content.ReadAsStringAsync();
+
+            var queryableHtml = new CQ(payload);
+
+            var options = queryableHtml["select[name='ciclop']"].Children();
+            return options.Select(e => e.Value);
+        }
 
 		private async Task<string> GetHtml(string formattedUrl)
 		{
