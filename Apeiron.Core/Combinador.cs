@@ -17,12 +17,12 @@ namespace Apeiron.Core
         private TimeSpan maxDuracionPorHueco;
         private int numMaterias = 0;
         private int numCiclos = 0;
-        private List<CentrosUniversitarios> filtroCentros;
+        private HashSet<string> filtroCentros;
         private ILookup<string, string> filtroMaestros;
         private bool soloConCupo;
         private bool permiteHorariosIncompletos;
 
-        public List<CombinacionGrupos> EncuentraTodos(List<Materia> materias, ILookup<string, string> filtroMaestros, TimeSpan maxDuracionPorHueco, List<CentrosUniversitarios> filtroCentros = null, int maxHuecosPorDia = int.MaxValue, bool soloConCupo = true, bool permiteHorariosIncompletos = true)
+        public List<CombinacionGrupos> EncuentraTodos(List<Materia> materias, TimeSpan maxDuracionPorHueco, ILookup<string, string> filtroMaestros = null, HashSet<string> filtroCentros = null, int maxHuecosPorDia = int.MaxValue, bool soloConCupo = true, bool permiteHorariosIncompletos = true)
         {
             this.numCiclos = 0;
             this.permiteHorariosIncompletos = permiteHorariosIncompletos;
@@ -46,7 +46,7 @@ namespace Apeiron.Core
         /// </summary>
         /// <param name="combinacionActual"></param>
         /// <param name="materias"></param>
-        public void ExploraCombinaciones(CombinacionGrupos combinacionActual, IEnumerable<Materia> materias)
+        private void ExploraCombinaciones(CombinacionGrupos combinacionActual, IEnumerable<Materia> materias)
         {
             if (numCiclos++ > 20000)
             {
@@ -78,7 +78,7 @@ namespace Apeiron.Core
                     var grupoValido = false;
                     if (!combinacionActual.ColisionaCon(grupo))
                     {
-                        if (filtroMaestros == null || filtroMaestros[grupo.Materia.Clave].FirstOrDefault() == "*" || filtroMaestros[grupo.Materia.Clave].Contains(grupo.Maestro))
+                        if (filtroMaestros == null || filtroMaestros[grupo.Materia.Clave].First() == "*" || filtroMaestros[grupo.Materia.Clave].Contains(grupo.Maestro))
                         {
                             if (filtroCentros == null || filtroCentros.Contains(grupo.CentroUniversitario))
                             {
