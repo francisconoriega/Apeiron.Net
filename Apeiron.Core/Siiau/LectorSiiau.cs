@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Net.Cache;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Apeiron.Core.Models;
@@ -14,17 +15,17 @@ namespace Apeiron.Siiau
 		private HttpClient client;
 		private readonly string urlRegistros = "http://t09.siiau.udg.mx/wco/sspseca.consulta_oferta?ciclop={CicloEscolar}&cup={CentroUniversitario}&crsep={ClaveMateria}&p_start={PaginacionInicio}&mostrarp={NumRegistros}";
 		private readonly string urlFormaConsulta = "http://t09.siiau.udg.mx/wco/sspseca.forma_consulta";
+        private Dictionary<string, string> simpleCache;
 
 		public LectorSiiau()
 		{
-			this.client = new HttpClient();
+            this.client = new HttpClient();
+            simpleCache = new Dictionary<string, string>();
 		}
 
 		public async Task<Dictionary<string,string>> GetCiclosEscolares()
 		{
-			var httpResponse = await this.client.GetAsync(urlFormaConsulta);
-			var payload = await httpResponse.Content.ReadAsStringAsync();
-
+            var payload = await GetHtml(urlFormaConsulta, true);
 			var queryableHtml = new CQ(payload);
 
 			var options = queryableHtml["select[name='cup']"].Children();
@@ -33,19 +34,30 @@ namespace Apeiron.Siiau
 
         public async Task<IEnumerable<string>> GetCentrosUniversitarios()
         {
-            var httpResponse = await this.client.GetAsync(urlFormaConsulta);
-            var payload = await httpResponse.Content.ReadAsStringAsync();
-
+            var payload = await GetHtml(urlFormaConsulta, true);
             var queryableHtml = new CQ(payload);
 
             var options = queryableHtml["select[name='ciclop']"].Children();
             return options.Select(e => e.Value);
         }
 
-		private async Task<string> GetHtml(string formattedUrl)
+		private async Task<string> GetHtml(string formattedUrl, bool usaCache = false)
 		{
+            if (usaCache && simpleCache.ContainsKey(formattedUrl))
+            {
+                return simpleCache[formattedUrl];
+            }
+
 			var httpResponse = await this.client.GetAsync(formattedUrl);
-			return await httpResponse.Content.ReadAsStringAsync();
+
+            var payload = await httpResponse.Content.ReadAsStringAsync();
+
+            if (usaCache)
+            {
+                simpleCache.Add(formattedUrl, payload);
+            }
+
+            return payload;
 		}
 
 
