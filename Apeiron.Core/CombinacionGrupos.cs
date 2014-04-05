@@ -1,10 +1,10 @@
-﻿using Apeiron.Core.Models;
-using Newtonsoft.Json;
-using NodaTime;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Apeiron.Core.Models;
+using Newtonsoft.Json;
+using NodaTime;
 
 namespace Apeiron.Core
 {
@@ -101,7 +101,6 @@ namespace Apeiron.Core
         {
             var tempGrupos = new List<Grupo>(this.Grupos);
             tempGrupos.Add(grupo);
-
             return this.CalculaHuecos(tempGrupos);
         }
 

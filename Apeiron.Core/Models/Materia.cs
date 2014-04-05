@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Apeiron.Core.Models
 {
@@ -17,7 +17,7 @@ namespace Apeiron.Core.Models
 
 
         [JsonIgnore]
-        public List<Grupo> Grupos { get; set; }
+        public IEnumerable<Grupo> Grupos { get; set; }
 
         public override string ToString()
         {

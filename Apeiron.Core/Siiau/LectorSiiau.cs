@@ -97,6 +97,7 @@ namespace Apeiron.Siiau
             }
 
             Materia materia = new Materia();
+            List<Grupo> grupos = new List<Grupo>();
             foreach (var tr in trs)
             {
                 var cqRow = CQ.CreateFragment(tr);
@@ -147,8 +148,9 @@ namespace Apeiron.Siiau
                 var ses_maestro = CQ.CreateFragment(cqRow["td:nth-child(9) tr"]);
                 grupo.Maestro = ses_maestro["td:nth-child(2)"].Text().Replace("~", "Ñ");
 
-                materia.Grupos.Add(grupo);
+                grupos.Add(grupo);
             }
+            materia.Grupos = grupos;
             return materia;
         }
 
