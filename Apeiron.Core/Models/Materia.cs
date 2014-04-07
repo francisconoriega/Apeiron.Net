@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Newtonsoft.Json;
 
 namespace Apeiron.Core.Models
 {
@@ -16,7 +15,7 @@ namespace Apeiron.Core.Models
         public int Creditos { get; set; }
 
 
-        [JsonIgnore]
+
         public IEnumerable<Grupo> Grupos { get; set; }
 
         public override string ToString()

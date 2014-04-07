@@ -10,6 +10,8 @@ namespace Apeiron.Core.Tests
     {
         LectorSiiau l;
 
+
+
         public static IEnumerable<string> ciclosEscolares { get; set; }
 
         public LectorTests()
@@ -35,17 +37,6 @@ namespace Apeiron.Core.Tests
 
             Assert.IsNotNull(c);
             Assert.IsTrue(c.Any(s => s.Value.Contains("CU")));
-
-        }
-
-        [TestMethod]
-        public void GetMateriaPorCentroTodos()
-        {
-            l = new LectorSiiau();
-            var x = ciclosEscolares;
-            var z = l.GetMateriaPorCentro("A0296", x.Skip(1).First()).Result;
-            Assert.IsNotNull(z);
-            Assert.AreEqual<string>("A0296", z.Clave);
         }
 
         [TestMethod]
