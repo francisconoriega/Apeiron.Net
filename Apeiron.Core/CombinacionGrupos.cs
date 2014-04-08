@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using Apeiron.Core.Models;
-using Newtonsoft.Json;
 using NodaTime;
 
 namespace Apeiron.Core
@@ -11,36 +9,17 @@ namespace Apeiron.Core
     public class CombinacionGrupos
     {
         private static readonly HashSet<IsoDayOfWeek> SEMANA = new HashSet<IsoDayOfWeek> { IsoDayOfWeek.Monday, IsoDayOfWeek.Tuesday, IsoDayOfWeek.Wednesday, IsoDayOfWeek.Thursday, IsoDayOfWeek.Friday, IsoDayOfWeek.Saturday };
-        public CombinacionGrupos()
-        {
-            this.Grupos = new ObservableCollection<Grupo>();
-            this.HuecosPorDia = new Dictionary<IsoDayOfWeek, List<TimeSpan>>();
-            InitHuecosPorDia(this.HuecosPorDia);
-            this.Grupos.CollectionChanged += Grupos_CollectionChanged;
 
-        }
-
-        void Grupos_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        public CombinacionGrupos(int numMaterias)
         {
-            //TODO: No tener que calcular todos los huecos cada vez que se modifica la lista de grupos en esta combinación.
-            //Solamente hacerlo para los días en que la nueva clase caiga
-            this.HuecosPorDia = this.CalculaHuecos(this.Grupos);
+            this.Grupos = new List<Grupo>(numMaterias);
+            this.HuecosPorDia = new Dictionary<IsoDayOfWeek, List<Period>>();
         }
-
-        private void InitHuecosPorDia(Dictionary<IsoDayOfWeek, List<TimeSpan>> huecos)
-        {
-            foreach (var dia in SEMANA)
-            {
-                huecos.Add(dia, new List<TimeSpan>());
-            }
-        }
-        public ObservableCollection<Grupo> Grupos { get; set; }
-        public Dictionary<IsoDayOfWeek, List<TimeSpan>> HuecosPorDia { get; set; }
+        public List<Grupo> Grupos { get; set; }
+        public Dictionary<IsoDayOfWeek, List<Period>> HuecosPorDia { get; set; }
 
         public bool ColisionaCon(Grupo otroGrupo)
         {
-            //TODO: usar matriz para eficientar busqueda.
-
             //Esto se leería más fácil en un lenguaje funcional. Básicamente dice:
             //Si cualquiera de las horas de cualquiera de los grupos en this.Grupos (lugarHora) colisiona
             //con cualquiera de las horas del otroGrupo (otroGrupoLugarHora)
@@ -48,7 +27,7 @@ namespace Apeiron.Core
             var horasDeLosGruposActuales = this.Grupos.SelectMany(g => g.LugaresHoras);
             var horasDelOtroGrupo = otroGrupo.LugaresHoras;
 
-            if (horasDeLosGruposActuales.Any(h=> horasDelOtroGrupo.Any(ho=> h.ColisionaCon(ho))))
+            if (horasDeLosGruposActuales.Any(h => horasDelOtroGrupo.Any(ho => h.ColisionaCon(ho))))
             {
                 return true;
             }
@@ -57,10 +36,17 @@ namespace Apeiron.Core
 
         internal CombinacionGrupos Clone()
         {
-            CombinacionGrupos cg = new CombinacionGrupos();
-            cg.Grupos = new ObservableCollection<Grupo>(this.Grupos);
-            //Serializar y deserializar para hacer un clon del objeto.
-            cg.HuecosPorDia = JsonConvert.DeserializeObject<Dictionary<IsoDayOfWeek, List<TimeSpan>>>(JsonConvert.SerializeObject(this.HuecosPorDia));
+            var cg = new CombinacionGrupos(this.Grupos.Count);
+            cg.Grupos = new List<Grupo>(this.Grupos);
+
+            var huecos = new Dictionary<IsoDayOfWeek, List<Period>>();
+
+            foreach (var dia in this.HuecosPorDia)
+            {
+                huecos.Add(dia.Key, new List<Period>(dia.Value));
+            }
+
+            cg.HuecosPorDia = huecos;
             cg.Completo = this.Completo;
 
             return cg;
@@ -69,27 +55,38 @@ namespace Apeiron.Core
         public bool Completo { get; set; }
 
         //TODO: no hacer la lista desde cero, solo agregar/quitar huecos
-        private Dictionary<IsoDayOfWeek, List<TimeSpan>> CalculaHuecos(IEnumerable<Grupo> grupos)
+        private Dictionary<IsoDayOfWeek, List<Period>> CalculaHuecos(IEnumerable<Grupo> grupos)
         {
-            var huecos = new Dictionary<IsoDayOfWeek, List<TimeSpan>>();
-            InitHuecosPorDia(huecos);
+            var huecos = new Dictionary<IsoDayOfWeek, List<Period>>();
+
+            if (grupos.Count() < 2)
+            {
+                return huecos;
+            }
 
             var horas = grupos.SelectMany(g => g.LugaresHoras);
 
             foreach (var dia in SEMANA)
             {
-                var clasesEnDia = horas.Where(h => h.Dias.Contains(dia)).OrderBy(c => c.HoraInicio);
+                var clasesEnDia = horas.Where(h => h.Dias.Contains(dia)).OrderBy(c => c.HoraInicio).ToList();
                 for (int i = 0; i < clasesEnDia.Count() - 1; i++)
                 {
-                    //Desafortunadamente no hay Intervalo para LocalDateTime, así que tenemos que convertirlo en Instante.
-                    var i1 = new Instant((clasesEnDia.ElementAt(i).HoraFin.LocalDateTime).TickOfDay);
-                    var i2 = new Instant(clasesEnDia.ElementAt(i + 1).HoraInicio.LocalDateTime.TickOfDay);
-                    var inter = new Interval(i1, i2);
+                    var period = Period.Between(clasesEnDia.ElementAt(i).HoraFin, clasesEnDia.ElementAt(i + 1).HoraInicio);
 
                     //Clases terminan a las :55, hay que tolerar al menos 5 minutos antes de considerarlo como hueco.
-                    if (inter.Duration.ToTimeSpan() > TimeSpan.FromMinutes(5))
+                    if (period.ToDuration().ToTimeSpan().TotalMinutes > 5)
                     {
-                        huecos[dia].Add(inter.Duration.ToTimeSpan());
+
+                        if (!huecos.ContainsKey(dia))
+                        {
+                            huecos.Add(dia, new List<Period>());
+                        }
+                        huecos[dia].Add(period);
+                    }
+
+                    if (period.Minutes < 0)
+                    {
+                        throw new Exception();
                     }
                 }
             }
@@ -97,7 +94,7 @@ namespace Apeiron.Core
         }
 
         //Calcula los huecos si se agrega ese grupo, sin afectar los huecos actuales.
-        internal Dictionary<IsoDayOfWeek, List<TimeSpan>> HuecosSiAgregoGrupo(Grupo grupo)
+        internal Dictionary<IsoDayOfWeek, List<Period>> HuecosSiAgregoGrupo(Grupo grupo)
         {
             var tempGrupos = new List<Grupo>(this.Grupos);
             tempGrupos.Add(grupo);
@@ -109,22 +106,41 @@ namespace Apeiron.Core
         {
             //busca en todos los días los huecos de cada día y regresa el mas grande de cada día o lo mas pequeño si no hay,
             //despues agarra el más grande de los esos valores.
-            return this.HuecosPorDia.Select(m => m.Value.Count > 0 ? m.Value.Max() : TimeSpan.FromTicks(0)).Max();
+            if (this.HuecosPorDia.Count == 0)
+            {
+                return TimeSpan.FromTicks(0);
+            }
+            return this.HuecosPorDia.SelectMany(h => h.Value).Max().ToDuration().ToTimeSpan();
         }
 
         public int MaxNumHuecosEnUnDia()
         {
+            if (this.HuecosPorDia.Count == 0)
+            {
+                return 0;
+            }
             return this.HuecosPorDia.Select(m => m.Value.Count()).Max();
         }
 
         //Ayuda a debugear
         public override string ToString()
         {
-            string str = string.Empty;
-            str += "Hueco Grande: " + DuracionHuecoMasGrande();
+            string str = string.Join(",", this.Grupos.Select(g => g.NRC));
+            str += "|Hueco Grande: " + DuracionHuecoMasGrande();
             str += " | #Max huecos en un dia:" + MaxNumHuecosEnUnDia();
             str += " | Cupo: " + this.Grupos.Select(g => g.CupoDisponible).Sum() + "/" + this.Grupos.Select(g => g.Cupo).Sum();
             return str;
         }
+
+        public override int GetHashCode()
+        {
+            return string.Join(",", this.Grupos.Select(g => g.NRC)).GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return this.Grupos.SequenceEqual((obj as CombinacionGrupos).Grupos);
+        }
+
     }
 }

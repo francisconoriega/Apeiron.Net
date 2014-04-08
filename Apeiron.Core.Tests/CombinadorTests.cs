@@ -2121,16 +2121,49 @@ namespace Apeiron.Core.Tests
 ]";
         #endregion
 
-        [TestMethod]
-        public void EncuentraHorario()
+        List<Models.Materia> materias;
+        public CombinadorTests()
         {
-            var materias = JsonConvert.DeserializeObject<List<Models.Materia>>(data);
+            materias = JsonConvert.DeserializeObject<List<Models.Materia>>(data);
+            foreach (var materia in materias)
+            {
+                foreach (var grupo in materia.Grupos)
+                {
+                    grupo.Materia = materia;
+                }
+            }
+        }
 
+        [TestMethod]
+        public void EncuentraHorarioNoRestricciones()
+        {
             Combinador c = new Combinador();
             var horarios = c.EncuentraTodos(materias, maxDuracionPorHueco: TimeSpan.MaxValue, soloConCupo: false);
 
-            Assert.IsTrue(horarios.Count == 9135);
-            Assert.IsTrue(horarios.Distinct().Count() == horarios.Count);
+            Assert.AreEqual(8226, horarios.Count);
+            Assert.AreEqual(horarios.Count, horarios.Distinct().Count());
+        }
+
+        [TestMethod]
+        public void EncuentraHorarioSoloConCupo()
+        {
+            Combinador c = new Combinador();
+            var horarios = c.EncuentraTodos(materias, maxDuracionPorHueco: TimeSpan.MaxValue, soloConCupo: true);
+
+            Assert.AreEqual(5330, horarios.Count);
+            Assert.AreEqual(horarios.Count, horarios.Distinct().Count());
+        }
+
+        [TestMethod]
+        public void EncuentraHorarioFiltroCentroUniversitario()
+        {
+            Combinador c = new Combinador();
+
+            var horarios = c.EncuentraTodos(materias, maxDuracionPorHueco: TimeSpan.MaxValue, soloConCupo: true, filtroCentros: new HashSet<string> { "D" });
+
+            Assert.IsTrue(horarios.All(h => h.Grupos.All(g => g.CentroUniversitario == "D")));
+            Assert.AreEqual(3663, horarios.Count);
+            Assert.AreEqual(horarios.Count, horarios.Distinct().Count());
         }
     }
 }
