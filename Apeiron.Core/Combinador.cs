@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Apeiron.Core.Models;
+using NodaTime;
 
 namespace Apeiron.Core
 {
@@ -9,9 +10,9 @@ namespace Apeiron.Core
     {
         public Combinador()
         {
-            this.CombinacionesDeGrupos = new List<CombinacionGrupos>();
+            CombinacionesDeGrupos = new HashSet<CombinacionGrupos>();
         }
-        private List<CombinacionGrupos> CombinacionesDeGrupos { get; set; }
+        private HashSet<CombinacionGrupos> CombinacionesDeGrupos { get; set; }
 
         private int maxHuecosPorDia = 0;
         private TimeSpan maxDuracionPorHueco;
@@ -22,21 +23,42 @@ namespace Apeiron.Core
         private bool soloConCupo;
         private bool permiteHorariosIncompletos;
 
-        public List<CombinacionGrupos> EncuentraTodos(List<Materia> materias, TimeSpan maxDuracionPorHueco, ILookup<string, string> filtroMaestros = null, HashSet<string> filtroCentros = null, int maxHuecosPorDia = int.MaxValue, bool soloConCupo = true, bool permiteHorariosIncompletos = true)
+        public HashSet<CombinacionGrupos> EncuentraTodos(List<Materia> materias, TimeSpan maxDuracionPorHueco, ILookup<string, string> filtroMaestros = null, HashSet<string> filtroCentros = null, int maxHuecosPorDia = int.MaxValue, bool soloConCupo = true, bool permiteHorariosIncompletos = true)
         {
-            this.numCiclos = 0;
+            numCiclos = 0;
             this.permiteHorariosIncompletos = permiteHorariosIncompletos;
             this.soloConCupo = soloConCupo;
             this.filtroMaestros = filtroMaestros;
             this.filtroCentros = filtroCentros;
             this.maxDuracionPorHueco = maxDuracionPorHueco;
             this.maxHuecosPorDia = maxHuecosPorDia;
-            this.CombinacionesDeGrupos = new List<CombinacionGrupos>();
+            this.CombinacionesDeGrupos = new HashSet<CombinacionGrupos>();
             this.numMaterias = materias.Count();
 
-            this.ExploraCombinaciones(new CombinacionGrupos(), materias.ToArray(), 0);
+            if (filtroCentros != null)
+            {
+                foreach (var materia in materias)
+                {
+                    materia.Grupos = materia.Grupos.Where(g => filtroCentros.Contains(g.CentroUniversitario));
+                }
+            }
 
-            return this.CombinacionesDeGrupos;
+            if (filtroMaestros != null)
+            {
+                foreach (var materia in materias)
+                {
+                    var filtro = filtroMaestros[materia.Clave];
+                    if (filtro.Contains("*"))
+                    {
+                        continue;
+                    }
+                    materia.Grupos = materia.Grupos.Where(g => filtro.Contains(g.Maestro));
+                }
+            }
+
+            ExploraCombinaciones(new CombinacionGrupos(materias.Count), materias.ToArray(), 0);
+
+            return CombinacionesDeGrupos;
         }
 
         HashSet<string> MateriasConGruposOrdenados = new HashSet<string>();
@@ -46,8 +68,6 @@ namespace Apeiron.Core
         /// no sea limitado por el numero de ciclos o por especificaciones como numero de huecos o 
         /// solo permitir horarios completos (que tienen todas las materias seleccionadas)
         /// </summary>
-        /// <param name="combinacionActual"></param>
-        /// <param name="materias"></param>
         private void ExploraCombinaciones(CombinacionGrupos combinacionActual, Materia[] materias, int i)
         {
             if (numCiclos++ > 20000)
@@ -58,6 +78,11 @@ namespace Apeiron.Core
             //Si ya n hay materias, ya terminamos las combinaciones posibles.
             if (i >= materias.Length)
             {
+                if (combinacionActual.Grupos.Count == 0)
+                {
+                    return;
+                }
+
                 if (combinacionActual.Grupos.Count == numMaterias)
                 {
                     combinacionActual.Completo = true;
@@ -67,7 +92,11 @@ namespace Apeiron.Core
                     combinacionActual.Completo = false;
                 }
 
-                this.CombinacionesDeGrupos.Add(combinacionActual.Clone());
+                // if (!CombinacionesDeGrupos.Contains(combinacionActual))
+
+                CombinacionesDeGrupos.Add(combinacionActual.Clone());
+
+
                 return;
             }
             else
@@ -77,27 +106,24 @@ namespace Apeiron.Core
                 if (!MateriasConGruposOrdenados.Contains(materias[i].Clave))
                 {
                     materias[i].Grupos = materias[i].Grupos.OrderByDescending(g => g.CupoDisponible);
-                    MateriasConGruposOrdenados.Add(materias[i].Clave); 
+                    MateriasConGruposOrdenados.Add(materias[i].Clave);
                 }
                 foreach (var grupo in materias[i].Grupos)
                 {
                     var grupoValido = false;
-                    if (!combinacionActual.ColisionaCon(grupo))
+                    if (!soloConCupo || (soloConCupo && grupo.CupoDisponible > 0))
                     {
-                        if (filtroMaestros == null || filtroMaestros[grupo.Materia.Clave].First() == "*" || filtroMaestros[grupo.Materia.Clave].Contains(grupo.Maestro))
+                        if (!combinacionActual.ColisionaCon(grupo))
                         {
-                            if (filtroCentros == null || filtroCentros.Contains(grupo.CentroUniversitario))
-                            {
-                                var huecosPorDia = combinacionActual.HuecosSiAgregoGrupo(grupo);
+                            var huecosPorDia = combinacionActual.HuecosSiAgregoGrupo(grupo);
 
-                                if (huecosPorDia.Select(m => m.Value.Count()).Max() <= this.maxHuecosPorDia && //Selecciona cuantos huecos hay en cada día, y el máximo de esos huecos por día
-                                    huecosPorDia.SelectMany(m => m.Value).All(h => h <= maxDuracionPorHueco)) //Checa que todos los huecos sean menor o igual que MaxDuracion
-                                {
-                                    grupoValido = true;
-                                    combinacionActual.Grupos.Add(grupo);
-                                    ExploraCombinaciones(combinacionActual, materias, i + 1);
-                                    combinacionActual.Grupos.Remove(grupo);
-                                }
+                            if (HuecosAceptables(huecosPorDia.Select(e => e.Value))) //Checa que todos los huecos sean menor o igual que MaxDuracion
+                            {
+                                combinacionActual.HuecosPorDia = huecosPorDia;
+                                grupoValido = true;
+                                combinacionActual.Grupos.Add(grupo);
+                                ExploraCombinaciones(combinacionActual, materias, i + 1);
+                                combinacionActual.Grupos.Remove(grupo);
                             }
                         }
                     }
@@ -105,12 +131,32 @@ namespace Apeiron.Core
                     //si el grupo no es valido, porque colisiona o el maestro no esta en la lista permitida (filtro)
                     //pero el combinador permite horarios sin todos las materias, seguimos explorando la combinación
                     //actual, saltandonos esta materia.
-                    if (!grupoValido && this.permiteHorariosIncompletos)
+                    if (!grupoValido && permiteHorariosIncompletos)
                     {
                         ExploraCombinaciones(combinacionActual, materias, i + 1);
                     }
                 }
             }
+        }
+
+        private bool HuecosAceptables(IEnumerable<List<Period>> huecosPorDia)
+        {
+            if (huecosPorDia.Count() == 0)
+            {
+                return true;
+            }
+
+            if (huecosPorDia.Select(l => l.Count).Max() >= maxHuecosPorDia)
+            {
+                return false;
+            }
+
+            if (huecosPorDia.SelectMany(periodo => periodo).Any(periodo => periodo.Minutes > maxDuracionPorHueco.Minutes))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

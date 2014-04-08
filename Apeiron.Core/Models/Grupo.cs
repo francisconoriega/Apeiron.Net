@@ -6,7 +6,7 @@ namespace Apeiron.Core.Models
     {
         public Grupo()
         {
-            this.LugaresHoras = new List<LugarHora>();
+            this.LugaresHoras = new List<CuandoYDonde>();
         }
         public string CentroUniversitario { get; set; }
         public string Maestro { get; set; }
@@ -16,12 +16,12 @@ namespace Apeiron.Core.Models
         public int CupoDisponible { get; set; }
         public string Periodo { get; set; }
 
-        public List<LugarHora> LugaresHoras { get; set; }
+        public IList<CuandoYDonde> LugaresHoras { get; set; }
         public Materia Materia { get; set; }
 
         public override string ToString()
         {
-            string str = this.Materia.Clave + ": ";
+            string str = this.NRC + "|" + this.Materia.Clave + ": ";
 
             foreach (var lh in LugaresHoras)
             {
@@ -32,8 +32,18 @@ namespace Apeiron.Core.Models
                 str += lh.HoraInicio.ToString() + " " + lh.HoraFin.ToString();
             }
 
-			str += "| cupo: " + this.CupoDisponible + "/" + this.Cupo;
+            str += "| cupo: " + this.CupoDisponible + "/" + this.Cupo;
             return str;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return this.NRC == (obj as Grupo).NRC;
+        }
+
+        public override int GetHashCode()
+        {
+            return this.NRC.GetHashCode();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -9,7 +10,7 @@ using SmartFormat;
 
 namespace Apeiron.Siiau
 {
-    public class LectorSiiau
+    public class LectorSiiau : IDisposable
     {
         private HttpClient client;
         private readonly string urlRegistros = "http://t09.siiau.udg.mx/wco/sspseca.consulta_oferta?ciclop={CicloEscolar}&cup={CentroUniversitario}&crsep={ClaveMateria}&p_start={PaginacionInicio}&mostrarp={NumRegistros}";
@@ -59,15 +60,16 @@ namespace Apeiron.Siiau
             return payload;
         }
 
-        public async Task<List<Materia>> GetMateriasPorCentro(List<string> claves, string cicloEscolar, string centroUniversitario = null)
+        public async Task<List<Materia>> GetMateriasPorCentro(IEnumerable<string> claves, string cicloEscolar, string centroUniversitario = null)
         {
-            List<Materia> materias = new List<Materia>();
+            Materia[] materias;
+            List<Task<Materia>> tasks = new List<Task<Materia>>();
             foreach (var clave in claves)
             {
-                var materia = await GetMateriaPorCentro(clave, cicloEscolar, centroUniversitario);
-                materias.Add(materia);
+                tasks.Add(GetMateriaPorCentro(clave, cicloEscolar, centroUniversitario));
             }
-            return materias;
+            materias = await Task.WhenAll(tasks);
+            return materias.ToList();
         }
 
         public async Task<Materia> GetMateriaPorCentro(string clave, string cicloEscolar, string codigoCentro = null)
@@ -116,6 +118,10 @@ namespace Apeiron.Siiau
                 {
                     grupo.CentroUniversitario = cqRow["td"].Eq(0).Text();
                 }
+                else
+                {
+                    grupo.CentroUniversitario = centroUniversitario;
+                }
 
                 grupo.NRC = cqRow["td"].Eq(i).Text();
                 materia.Clave = cqRow["td"].Eq(i + 1).Text(); ;
@@ -131,18 +137,18 @@ namespace Apeiron.Siiau
                     var info = CQ.CreateFragment(cqRow["td:eq(" + (i + 7) + ") tr"].Eq(numInfo));
                     var horas = info["td:eq(1)"].Text().Split('-');
 
-                    LugarHora lg = new LugarHora();
-                    lg.HoraInicio = new NodaTime.LocalTime(
+                    CuandoYDonde cd = new CuandoYDonde();
+                    cd.HoraInicio = new NodaTime.LocalTime(
                         hour: int.Parse(horas.First().Substring(0, 2)),
                         minute: int.Parse(horas.First().Substring(2, 2)));
-                    lg.HoraFin = new NodaTime.LocalTime(
+                    cd.HoraFin = new NodaTime.LocalTime(
                         hour: int.Parse(horas.Last().Substring(0, 2)),
                         minute: int.Parse(horas.Last().Substring(2, 2)));
-                    lg.Dias = ParseDias(info["td:eq(2)"].Text());
-                    lg.Edificio = info["td:eq(3)"].Text();
-                    lg.Aula = info["td:eq(4)"].Text();
+                    cd.Dias = ParseDias(info["td:eq(2)"].Text());
+                    cd.Edificio = info["td:eq(3)"].Text();
+                    cd.Aula = info["td:eq(4)"].Text();
 
-                    grupo.LugaresHoras.Add(lg);
+                    grupo.LugaresHoras.Add(cd);
                     grupo.Periodo = info["td:eq(5)"].Text();
                 }
                 var ses_maestro = CQ.CreateFragment(cqRow["td:nth-child(9) tr"]);
@@ -175,5 +181,15 @@ namespace Apeiron.Siiau
             return dias;
         }
 
+        public void Dispose()
+        {
+            Dispose(true);            
+        }
+
+        private void Dispose(bool v)
+        {
+            client.Dispose();
+            GC.SuppressFinalize(this);
+        }
     }
 }
